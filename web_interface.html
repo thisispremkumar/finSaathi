@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinSaathi - Expense Categorization</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #34495e;
+        }
+        
+        input, textarea, button {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            background: #2980b9;
+        }
+        
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .result.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .result.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .prediction {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-left: 4px solid #3498db;
+        }
+        
+        .confidence {
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            background: #ecf0f1;
+            border: 1px solid #bdc3c7;
+            cursor: pointer;
+        }
+        
+        .tab.active {
+            background: #3498db;
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏦 FinSaathi - Expense Categorization</h1>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="showTab('transaction')">Single Transaction</div>
+            <div class="tab" onclick="showTab('ocr')">OCR Receipt</div>
+            <div class="tab" onclick="showTab('batch')">Batch Processing</div>
+        </div>
+        
+        <!-- Single Transaction Tab -->
+        <div id="transaction" class="tab-content active">
+            <form id="transactionForm">
+                <div class="form-group">
+                    <label for="description">Description:</label>
+                    <input type="text" id="description" name="description" 
+                           placeholder="e.g., Coffee and pastry" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="merchant">Merchant:</label>
+                    <input type="text" id="merchant" name="merchant" 
+                           placeholder="e.g., Starbucks">
+                </div>
+                
+                <div class="form-group">
+                    <label for="amount">Amount ($):</label>
+                    <input type="number" id="amount" name="amount" 
+                           placeholder="e.g., 8.50" step="0.01">
+                </div>
+                
+                <button type="submit">Categorize Transaction</button>
+            </form>
+        </div>
+        
+        <!-- OCR Receipt Tab -->
+        <div id="ocr" class="tab-content">
+            <form id="ocrForm">
+                <div class="form-group">
+                    <label for="ocrText">OCR Text:</label>
+                    <textarea id="ocrText" name="ocrText" 
+                              placeholder="Paste receipt text here..." required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="ocrAmount">Total Amount ($):</label>
+                    <input type="number" id="ocrAmount" name="amount" 
+                           placeholder="e.g., 25.99" step="0.01">
+                </div>
+                
+                <button type="submit">Categorize Receipt</button>
+            </form>
+        </div>
+        
+        <!-- Batch Processing Tab -->
+        <div id="batch" class="tab-content">
+            <form id="batchForm">
+                <div class="form-group">
+                    <label for="batchData">Transactions (JSON):</label>
+                    <textarea id="batchData" name="batchData" 
+                              placeholder='[{"id": "1", "description": "Coffee", "merchant": "Starbucks", "amount": 5.50}]' required></textarea>
+                </div>
+                
+                <button type="submit">Process Batch</button>
+            </form>
+        </div>
+        
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://127.0.0.1:5000';
+        
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            // Clear results
+            document.getElementById('result').style.display = 'none';
+        }
+        
+        function showResult(data, isError = false) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = `result ${isError ? 'error' : 'success'}`;
+            resultDiv.innerHTML = formatResult(data, isError);
+            resultDiv.style.display = 'block';
+        }
+        
+        function formatResult(data, isError) {
+            if (isError) {
+                return `<strong>Error:</strong> ${data.error || 'Unknown error occurred'}`;
+            }
+            
+            if (data.results) {
+                // Batch results
+                let html = `<strong>Batch Processing Results:</strong><br>`;
+                data.results.forEach(result => {
+                    html += `<div class="prediction">
+                        <strong>Transaction ${result.transaction_id}:</strong> 
+                        ${result.categorization.primary_category}
+                        <div class="confidence">Confidence: ${(result.categorization.confidence * 100).toFixed(1)}%</div>
+                    </div>`;
+                });
+                return html;
+            } else if (data.result) {
+                // Single transaction result
+                let html = `<strong>Primary Category:</strong> ${data.result.primary_category}<br>`;
+                html += `<strong>Confidence:</strong> ${(data.result.confidence * 100).toFixed(1)}%<br><br>`;
+                html += `<strong>All Predictions:</strong><br>`;
+                
+                data.result.all_predictions.forEach((pred, index) => {
+                    html += `<div class="prediction">
+                        ${index + 1}. ${pred.category}
+                        <div class="confidence">Confidence: ${(pred.confidence * 100).toFixed(1)}%</div>
+                    </div>`;
+                });
+                
+                if (data.merchant_extracted) {
+                    html += `<br><strong>Extracted Merchant:</strong> ${data.merchant_extracted}`;
+                }
+                
+                return html;
+            }
+            
+            return JSON.stringify(data, null, 2);
+        }
+        
+        // Handle transaction form
+        document.getElementById('transactionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = {
+                description: formData.get('description'),
+                merchant: formData.get('merchant'),
+                amount: formData.get('amount') ? parseFloat(formData.get('amount')) : null
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/categorize/transaction`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                showResult(result, !response.ok);
+            } catch (error) {
+                showResult({error: 'Failed to connect to server'}, true);
+            }
+        });
+        
+        // Handle OCR form
+        document.getElementById('ocrForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = {
+                ocr_text: formData.get('ocrText'),
+                amount: formData.get('amount') ? parseFloat(formData.get('amount')) : null
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/categorize/ocr`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                showResult(result, !response.ok);
+            } catch (error) {
+                showResult({error: 'Failed to connect to server'}, true);
+            }
+        });
+        
+        // Handle batch form
+        document.getElementById('batchForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            
+            try {
+                const transactions = JSON.parse(formData.get('batchData'));
+                const data = { transactions };
+                
+                const response = await fetch(`${API_BASE}/api/categorize/batch`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                showResult(result, !response.ok);
+            } catch (error) {
+                showResult({error: 'Invalid JSON format or server error'}, true);
+            }
+        });
+    </script>
+</body>
+</html>
