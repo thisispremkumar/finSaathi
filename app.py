@@ -315,7 +315,7 @@ class ProductionCategorizer:
         
         return EnhancedStandaloneAI()
     
-    def categorize_sms(self, sms_text):
+    def categorize_expense(self, sms_text):
         """Main SMS categorization - requires only SMS text"""
         try:
             # Use standalone AI (no additional arguments needed)
@@ -355,7 +355,7 @@ categorizer = ImprovedExpenseCategorizer()
 
 # Load models at startup
 print("🔄 Loading standalone AI system...")
-categorizer.load_models()
+categorizer.load_model()
 
 # API Routes
 @app.route('/')
@@ -405,7 +405,7 @@ def health_check():
     })
 
 @app.route('/api/categorize', methods=['POST'])
-def categorize_sms_standalone():
+def categorize_sms_single():
     """Standalone SMS categorization - requires only SMS text"""
     try:
         data = request.get_json()
@@ -419,7 +419,7 @@ def categorize_sms_standalone():
             return jsonify({'error': 'sms_text is required'}), 400
         
         # Categorize using standalone method (no additional arguments)
-        result = categorizer.categorize_sms(sms_text)
+        result = categorizer.categorize_expense(sms_text)
         
         return jsonify({
             'success': True,
