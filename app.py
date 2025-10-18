@@ -237,9 +237,9 @@ class ProductionCategorizer:
 # Initialize categorizer and load models
 categorizer = ProductionCategorizer()
 
-@app.before_first_request
+@app.before_serving
 def initialize_models():
-    """Load models before first request"""
+    """Load models once before serving requests"""
     logger.info("🔄 Loading trained models...")
     categorizer.load_models()
 
