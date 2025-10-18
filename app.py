@@ -13,6 +13,7 @@ import re
 import logging
 from datetime import datetime
 import traceback
+from enhanced_categorizer_v2 import ProductionCategorizer
 
 # Configure logging
 logging.basicConfig(
