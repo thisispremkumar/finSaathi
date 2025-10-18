@@ -22,6 +22,12 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+logger = logging.getLogger(__name__)
+
+logger.info("🔄 Loading trained models...")
+# Initialize categorizer and load models
+categorizer = ProductionCategorizer()
+categorizer.load_models()
 CORS(app)  # Enable CORS for frontend integration
 
 class ProductionCategorizer:
@@ -233,15 +239,6 @@ class ProductionCategorizer:
                 'confidence': 0.0,
                 'sms_data': self.extract_sms_data(sms_text)
             }
-
-# Initialize categorizer and load models
-categorizer = ProductionCategorizer()
-
-@app.before_serving
-def initialize_models():
-    """Load models once before serving requests"""
-    logger.info("🔄 Loading trained models...")
-    categorizer.load_models()
 
 # API Routes
 @app.route('/')
