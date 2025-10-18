@@ -351,7 +351,7 @@ class ProductionCategorizer:
             }
 
 # Initialize standalone categorizer
-categorizer = StandaloneCategorizer()
+categorizer = ImprovedExpenseCategorizer()
 
 # Load models at startup
 print("🔄 Loading standalone AI system...")
