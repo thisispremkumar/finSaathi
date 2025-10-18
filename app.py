@@ -435,15 +435,7 @@ def not_found(error):
 def internal_error(error):
     return jsonify({'error': 'Internal server error'}), 500
 
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    debug = os.environ.get('DEBUG', 'False').lower() == 'true'
-    
-    logger.info(f"🚀 Starting FinSaathi Production API on port {port}")
-    logger.info(f"🔗 API available at: http://localhost:{port}")
-    logger.info(f"📚 Documentation: http://localhost:{port}")
-    
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
     # Load models at startup
     categorizer.load_models()
-    
-    app.run(host='0.0.0.0', port=port, debug=debug)
