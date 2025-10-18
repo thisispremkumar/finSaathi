@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 logger.info("🔄 Loading trained models...")
 # Initialize categorizer and load models
 categorizer = ImprovedExpenseCategorizer()
-categorizer.load_models()
+categorizer.load_model()
 CORS(app)  # Enable CORS for frontend integration
 
 class ProductionCategorizer:
