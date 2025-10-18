@@ -341,7 +341,7 @@ def categorize_sms():
             return jsonify({'error': 'sms_text is required'}), 400
         
         # Categorize using trained models
-        result = categorizer.categorize_sms(sms_text)
+        result = categorizer.categorize_expense(sms_text)
         
         return jsonify({
             'success': True,
